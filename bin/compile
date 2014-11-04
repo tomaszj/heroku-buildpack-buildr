@@ -12,7 +12,7 @@ BUILD_DIR=$1
 CACHE_DIR=$2
 ENV_DIR=$3
 
-GRADLE_TASK=${GRADLE_TASK-stage}
+BUILDR_TASK=${BUILDR_TASK-stage}
 
 JVM_COMMON_BUILDPACK=http://lang-jvm.s3.amazonaws.com/jvm-buildpack-common-v3.tar.gz
 mkdir -p /tmp/jvm-common
@@ -41,29 +41,20 @@ install_java ${BUILD_DIR} ${javaVersion}
 jdk_overlay ${BUILD_DIR}
 echo "done"
 
+# install buildr
+/usr/local/bin/gem install buildr --no-rdoc --no-ri | indent
+
 if [ ! -d $CACHE_DIR ] ; then
   mkdir $CACHE_DIR
 fi
 
-export GRADLE_USER_HOME=$CACHE_DIR/.gradle
-
-if [ ! -f $BUILD_DIR/gradlew ] ; then
-  echo "-----> Installing Gradle Wrapper..."
-  echo "       WARNING: Your application does not have it's own gradlew file."
-  echo "       We'll install one for you, but this is a deprecated feature and"
-  echo "       in the future may not be supported."
-  cp -rn ${OPT_DIR}/wrapper/* ${BUILD_DIR}
-fi
-BUILDCMD="./gradlew"
-chmod +x ${BUILD_DIR}/gradlew
-
-BUILDCMD="$BUILDCMD $GRADLE_TASK"
+BUILDCMD="buildr $BUILDR_TASK"
 
 cd $BUILD_DIR
 
 # build app
-echo "-----> Building Gradle app..."
-echo "       WARNING: The Gradle buildpack is currently in Beta."
+echo "-----> Building Buildr app..."
+echo "       WARNING: The Buildr buildpack is currently in Beta."
 echo "-----> executing $BUILDCMD"
 
 $BUILDCMD 2>&1 | sed -u 's/^/       /'
@@ -73,6 +64,3 @@ if [ "${PIPESTATUS[*]}" != "0 0" ]; then
   exit 1
 fi
 
-PROFILE_PATH="$BUILD_DIR/.profile.d/gradle.sh"
-mkdir -p $(dirname $PROFILE_PATH)
-echo 'export PATH="/app/.jdk/bin:$PATH"' >> $PROFILE_PATH
