@@ -5,7 +5,6 @@
 set -e
 
 BIN_DIR=$(cd $(dirname $0); pwd) # absolute path
-OPT_DIR=$(cd $BIN_DIR/../opt; pwd)
 
 # parse args
 BUILD_DIR=$1
@@ -41,8 +40,15 @@ install_java ${BUILD_DIR} ${javaVersion}
 jdk_overlay ${BUILD_DIR}
 echo "done"
 
-# install buildr
-/usr/local/bin/gem install buildr --no-rdoc --no-ri | indent
+# Prepare Gems environment
+cat << EOF > ~/.gemrc
+gemhome: $1/.gems
+gempath:
+- $1/.gems
+EOF
+
+# Install buildr
+/usr/local/bin/gem install buildr --no-rdoc --no-ri
 
 if [ ! -d $CACHE_DIR ] ; then
   mkdir $CACHE_DIR
